@@ -1,0 +1,5 @@
+# Raw data
+data/raw/*
+
+# Subsets / processed data
+data/subset/*
