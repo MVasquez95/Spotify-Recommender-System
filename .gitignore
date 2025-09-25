@@ -3,3 +3,10 @@ data/raw/*
 
 # Subsets / processed data
 data/subset/*
+
+# Python virtual environments
+venv310/
+
+# Python cache
+src/__pycache__/
+*.py[cod]
