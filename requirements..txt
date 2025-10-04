@@ -1,8 +1,9 @@
 pandas
 numpy
 scikit-learn
-lightfm
-implicit
 scipy
 matplotlib
 seaborn
+implicit
+optuna
+tqdm

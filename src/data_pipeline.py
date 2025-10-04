@@ -12,8 +12,13 @@ ZIP_PATH = RAW_DIR / "spotify_million_playlist_dataset.zip"
 SUBSET_FILE_JSON = SUBSET_DIR / "spotify_million_playlist_dataset.json"
 SUBSET_FILE_PARQUET = SUBSET_DIR / "spotify_million_playlist_dataset.parquet"
 
+# Original parameters
 PLAYLISTS_PER_SLICE = 1000
-N_SLICES = 150
+# 500k playlists
+N_SLICES = 500
+
+# Reduced subset for modeling (50k playlists)
+REDUCED_N_SLICES = 50
 
 def extract_subset(zip_path=ZIP_PATH, n_slices=N_SLICES, playlists_per_slice=PLAYLISTS_PER_SLICE):
     if not zip_path.exists():
@@ -46,16 +51,30 @@ def extract_subset(zip_path=ZIP_PATH, n_slices=N_SLICES, playlists_per_slice=PLA
 
     return subset_playlists
 
-# Load the 150k playlists subset. If not present, extract it.
-def load_subset(force_extract=False):
-    if SUBSET_FILE_PARQUET.exists() and not force_extract:
-        print(f"Loading subset from {SUBSET_FILE_PARQUET}...")
-        return pd.read_parquet(SUBSET_FILE_PARQUET)
+
+def load_subset(force_extract=False, reduced=False):
+    if reduced:
+        n_slices = REDUCED_N_SLICES
+        subset_file = SUBSET_DIR / "spotify_million_playlist_dataset_50k.parquet"
     else:
-        return pd.DataFrame(extract_subset())
+        n_slices = N_SLICES
+        subset_file = SUBSET_FILE_PARQUET
+
+    if subset_file.exists() and not force_extract:
+        print(f"Loading subset from {subset_file}...")
+        return pd.read_parquet(subset_file)
+    else:
+        playlists = extract_subset(n_slices=n_slices)
+        df = pd.DataFrame(playlists)
+        # Save reduced subset if applicable
+        if reduced:
+            df.to_parquet(subset_file, index=False)
+        return df
+
 
 # Quick test
 if __name__ == "__main__":
-    df = load_subset()
+    # Load reduced subset for modeling
+    df = load_subset(reduced=True)
     print(df.head())
-    print(f"Total playlists: {df.shape[0]}")
+    print(f"Total playlists (reduced subset): {df.shape[0]}")

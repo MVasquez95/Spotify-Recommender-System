@@ -2,41 +2,41 @@
 
 ## Aim
 Build a song/playlist recommendation system using Spotify data.  
-**Baseline (popularity)**, **collaborative filtering (ALS, LightFM)** and **hybrid** models are implemented.
+We implemented and compared **baseline (popularity)** and **collaborative filtering (ALS)** models, evaluating them with standard ranking metrics.
 
 ## Structure
-- `notebooks/`: analysis and experiments.
+- `notebooks/`: analysis and experiments (EDA, baseline, ALS, evaluation).
 - `src/`: reusable functions (pipeline, models, metrics).
-- `data/`: datasets (raw and processed).
-   -`raw/`: original downloaded zips
-   .`subset/`: subset of 150k playlists (JSON + Parquet)
+- `data/`: datasets (raw, subset, processed).
+  - `raw/`: original downloaded zips.
+  - `subset/`: subset of 150k playlists (JSON + Parquet).
+  - `processed/`: intermediate CSR matrices and mappings.
+- `models/`: trained model files (e.g., `als_optuna.pkl`).
 
-## Bookstores
+## Requirements
 See `requirements.txt`.
 
 ## Dataset
-Can be used:
-- Spotify Million Playlist Dataset (MPD)
-- Spotify Challenge Dataset (10k playlists)
-- Spotify API (optional, for additional experiments)
-- Subsets created for prototypes
+We used:
+- **Spotify Million Playlist Dataset (MPD)** (~6GB).
+- **Spotify Challenge Dataset** (10k playlists) for evaluation/demo.
+- **Subset (150k playlists)** created for faster prototyping.
+
 
 ## Dataset setup
-1. **Download the MPD dataset (training set, ~6GB) from AIcrowd:**
-   https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/dataset_files
-   and place it in `data/raw/spotify_million_playlist_dataset.zip`.
+1. **Download MPD dataset (training set, ~6GB) from AIcrowd:**
+   https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/dataset_files  
+   Place it in `data/raw/spotify_million_playlist_dataset.zip`.
 
 2. **Optionally, download the challenge/test set (~10k playlists):**
-   `spotify_million_playlist_dataset_challenge.zip` for evaluation/demo purposes.
+   `spotify_million_playlist_dataset_challenge.zip` → place in `data/raw/`.
 
-3. **Generate the subset (150k playlists)**
-- Run `src/data_pipeline.py`
-- Or load it directly in your notebook:
-   ```Python
-   from src.data_pipeline import load_subset
-   df = load_subset()
-   ```
-   to generate the subset of 150k playlists.
+3. **Generate subset (500k playlists)**:
+   - Run `src/data_pipeline.py`
+   - Or load it directly in your notebook:
+     ```python
+     from src.data_pipeline import load_subset
+     df = load_subset()
 
 ## Notes
 - **Do NOT commit raw or subset data**. The repository `.gitignore` already ignores:
@@ -49,11 +49,21 @@ Can be used:
 - Challenge/test set can be used for **evaluation or demo purposes.**
 
 ## Planned Notebooks
-1. **01_EDA.ipynb** → Explore the subset, generate statistics and wow-factor visualizations.
-2. **02_Baseline_Models.ipynb** → Popularity-based recommendations.
-3. **03_Collaborative_Models.ipynb** → ALS / LightFM models.
-4. **04_Hybrid_Models.ipynb** → Combine collaborative + content features.
-5. **05_Evaluation.ipynb** → Metrics: Precision@K, Recall@K, NDCG@K, Hit Rate, Diversity, Novelty.
+1. 01_EDA.ipynb → Explore subset, generate statistics & visualizations.
+2. 02_baseline_popularity.ipynb → Popularity-based recommendations.
+3. 03_data_prep.ipynb → ALS with hyperparameter tuning via Optuna.
+4. 04_ALS_training.ipynb → ALS with hyperparameter tuning via Optuna & Compare ALS vs. Popularity using Precision@K, Recall@K, NDCG@K, and Hit Rate.
+
+## Results
+- ALS significantly outperforms Popularity across all metrics (Precision, Recall, HitRate, NDCG).
+- Improvements are especially large at smaller cutoffs (K=10), which are more relevant in practice.
+- Full results in als_optuna_eval.csv and popularity_model_eval.csv.
+
+## Future Work
+- Incorporate side information (user/item metadata).
+- Explore sequence-aware or neural recommenders (LightFM, Transformers, GNNs).
+- Perform online evaluation (A/B testing).
+- Investigate hybrid models (collaborative + content-based).
 
 ## Spotify Recommender System – Data & Notebook Flow
 
@@ -67,39 +77,30 @@ Can be used:
         ┌───────────────────────┐
         │  src/data_pipeline.py │
         │  - Extract subset     │
-        │  - Generate 150k      │
+        │  - Generate 500k      │
         └───────────────────────┘
                    │
                    ▼
   ┌─────────────────────────────┐
-  │ Subset: 150k playlists      │
+  │ Subset: 500k playlists      │
   │  JSON + Parquet             │
   └─────────────────────────────┘
         │           │           │
         ▼           ▼           ▼
-┌─────────────┐ ┌─────────────┐ ┌──────────────┐
-│ 01_EDA      │ │ 02_Baseline │ │ 03_Collab    │
-│ - Explore   │ │ - Popularity│ │ - ALS/LightFM│
-│ - Stats     │ │             │ │ Models       │
-└─────────────┘ └─────────────┘ └──────────────┘
-        │
-        ▼
-┌─────────────┐
-│ 04_Hybrid   │
-│ - Combine CF│
-│   + Content │
-└─────────────┘
-        │
-        ▼
-┌──────────────┐
-│ 05_Evaluation│
-│ - Precision@K│
-│ - Recall@K   │
-│ - NDCG@K     │
-│ - HitRate    │
-│ - Diversity  │
-│ - Optional:  │
-│   Challenge  │
-│   Test set   │
-└──────────────┘
+┌─────────────┐ ┌─────────────┐ ┌──────────────────┐
+│ 01_EDA      │ │ 02_Baseline │ │ 03_data_prep     │
+│ - Explore   │ │ - Popularity│ │ - DATA PROCESS   │
+│ - Stats     │ │             │ │ FOR USE IN MODELS│
+└─────────────┘ └─────────────┘ └──────────────────┘
+                                       │
+                                       ▼
+                               ┌───────────────────┐
+                               │ 04_ALS_training   │
+                               │ - Train ALS       │
+                               │ - Compare results │
+                               │ - Precision@K     │
+                               │ - Recall@K        │
+                               │ - NDCG@K          │
+                               │ - HitRate         │
+                               └───────────────────┘
 ```

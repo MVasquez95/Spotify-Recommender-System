@@ -1,21 +1,22 @@
 import numpy as np
+from .metrics import precision_at_k, recall_at_k, ndcg_at_k, hit_rate_at_k
+from .models import generate_recommendations
 
-def precision_at_k(recs, ground_truth, k=10):
-    precisions = []
-    for u, rec_list in recs.items():
-        gt = ground_truth.get(u, set())
-        if not gt:
-            continue
-        hits = sum(1 for item in rec_list[:k] if item in gt)
-        precisions.append(hits / k)
-    return np.mean(precisions)
+def evaluate(model, train_csr, test_csr, user_limit=1000):
+    n_users = train_csr.shape[0]
+    user_ids = np.arange(n_users)
+    if user_limit and user_limit < n_users:
+        user_ids = np.random.choice(user_ids, size=user_limit, replace=False)
 
-def recall_at_k(recs, ground_truth, k=10):
-    recalls = []
-    for u, rec_list in recs.items():
-        gt = ground_truth.get(u, set())
-        if not gt:
-            continue
-        hits = sum(1 for item in rec_list[:k] if item in gt)
-        recalls.append(hits / len(gt))
-    return np.mean(recalls)
+    recs = generate_recommendations(model, train_csr, user_ids, N=100)
+    ground_truth = {u: set(test_csr[u].indices) for u in user_ids}
+
+    k_values = [10, 50, 100]
+    metrics = {}
+    for k in k_values:
+        metrics[f"precision@{k}"] = precision_at_k(recs, ground_truth, k)
+        metrics[f"recall@{k}"]   = recall_at_k(recs, ground_truth, k)
+        metrics[f"ndcg@{k}"]     = ndcg_at_k(recs, ground_truth, k)
+        metrics[f"hitrate@{k}"]  = hit_rate_at_k(recs, ground_truth, k)
+
+    return metrics
