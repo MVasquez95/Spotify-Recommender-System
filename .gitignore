@@ -1,0 +1,12 @@
+# Raw data Subsets / processed data
+data/*
+
+# Python virtual environments
+venv310/
+
+# Python cache
+src/__pycache__/
+*.py[cod]
+
+# Python models
+models/als_optuna.pkl
